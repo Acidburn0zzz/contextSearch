@@ -3,7 +3,7 @@
   "manifest_version": 2,
   "name": "Context Search",
   "description": "Searches the selected text using a search engine from a pre-specified list",
-  "version": "3.13",
+  "version": "3.14",
   "author": "Olivier de Broqueville",
   "applications": {
     "gecko": {
