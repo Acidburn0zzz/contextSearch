@@ -19,25 +19,30 @@ function getIconUrl(head) {
 }
 
 function getFaviconUrl(url){
-    let urlParts = url.replace('http://','').replace('https://','').split(/[/?#]/);
-    let domain = urlParts[0];
-	let head, faviconUrl = "";
-	const req = new XMLHttpRequest();
-    req.responseType = "document";
-	req.open('GET', domain, true); 
-	req.send(null);
-	req.onreadystatechange = function() {
-  	if (req.readyState === XMLHttpRequest.DONE && req.status === 200) {
-      head = req.response.head;
-      console.log(head);
-      faviconUrl = getIconUrl(head);
-      if (faviconUrl.indexOf("/") === 0) {
-      	faviconUrl = url + faviconUrl;
-      }
-      console.log(faviconUrl);
-      return faviconUrl;
-	  }
-	}
+    return new Promise(function(resolve, reject) {
+        var urlParts = url.replace('http://','').replace('https://','').split(/[/?#]/);
+        var domain = urlParts[0];
+        var head, faviconUrl = "";
+        const req = new XMLHttpRequest();
+        req.responseType = "document";
+        req.overrideMimeType('text/html');
+        req.setRequestHeader("Content-Type", "text/html");
+        req.open('GET', domain, true); 
+        req.send(null);
+        req.onerror = reject(faviconUrl);
+        req.onreadystatechange = function() {
+            if (req.readyState === XMLHttpRequest.DONE && req.status === 200) {
+                head = req.response.head;
+                console.log(head);
+                faviconUrl = getIconUrl(head);
+                if (faviconUrl.indexOf("/") === 0) {
+                    faviconUrl = url + faviconUrl;
+                }
+                console.log(faviconUrl);
+                resolve(faviconUrl);
+            }
+        }
+    });
 }
 
 // Create the context menu using the search engines listed above
@@ -48,26 +53,33 @@ function updateContextMenu(changes, area) {
             searchEngines = sortAlphabetically(data);
             searchEnginesArray = [];
             var index = 0;
-            var strId, strTitle, url, faviconUrl = "";
+            var strId, strTitle, url = "";
             for (var se in searchEngines) {
                 strId = index.toString();
                 strTitle = searchEngines[se].name;
                 url = searchEngines[se].url;
-                faviconUrl = getFaviconUrl(url); // I think I need to add 'then' here?    
-                if (typeof faviconUrl === "undefined") {
-                    faviconUrl = "https://s2.googleusercontent.com/s2/favicons?domain_url=" + url;
-                }
-                searchEnginesArray.push(se);
-                if (searchEngines[se].show) {
-                    browser.contextMenus.create({
-                        id: strId,
-                        title: strTitle,
-                        contexts: ["selection"],
-                        icons: {
-                            18: faviconUrl
-                        }
-                    });
-                }
+//                faviconUrl = "https://s2.googleusercontent.com/s2/favicons?domain_url=" + url;
+                getFaviconUrl(url).then(
+                    function(faviconUrl){
+                        if (typeof faviconUrl === "undefined") {
+                            faviconUrl = "https://s2.googleusercontent.com/s2/favicons?domain_url=" + url;
+                        } //*/
+                        searchEnginesArray.push(se);
+                        if (searchEngines[se].show) {
+                            browser.contextMenus.create({
+                                id: strId,
+                                title: strTitle,
+                                contexts: ["selection"],
+                                icons: {
+                                    18: faviconUrl
+                                }
+                            });
+                        }    
+                    },
+                    function(faviconUrl){
+                        console.log('Error loading favicon from ' + faviconUrl)
+                    }
+                );
                 index += 1;
             }
         }
