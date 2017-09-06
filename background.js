@@ -6,45 +6,6 @@ function onError(error) {
     console.log(`Error: ${error}`)
 }
 
-function getIconUrl(head) {
-  var links = head.getElementsByTagName("link");
-  console.log(links);
-  for (let link of links) {
-  	let rel = link.getAttribute("rel");
-  	if (rel === "icon" || rel === "shortcut icon") {
-    	return link.getAttribute("href");
-    }
-  }
-  return "";
-}
-
-function getFaviconUrl(url){
-    return new Promise(function(resolve, reject) {
-        var urlParts = url.replace('http://','').replace('https://','').split(/[/?#]/);
-        var domain = urlParts[0];
-        var head, faviconUrl = "";
-        const req = new XMLHttpRequest();
-        req.responseType = "document";
-        req.overrideMimeType('text/html');
-        req.setRequestHeader("Content-Type", "text/html");
-        req.open('GET', domain, true); 
-        req.send(null);
-        req.onerror = reject(faviconUrl);
-        req.onreadystatechange = function() {
-            if (req.readyState === XMLHttpRequest.DONE && req.status === 200) {
-                head = req.response.head;
-                console.log(head);
-                faviconUrl = getIconUrl(head);
-                if (faviconUrl.indexOf("/") === 0) {
-                    faviconUrl = url + faviconUrl;
-                }
-                console.log(faviconUrl);
-                resolve(faviconUrl);
-            }
-        }
-    });
-}
-
 // Create the context menu using the search engines listed above
 function updateContextMenu(changes, area) {
     browser.contextMenus.removeAll();
@@ -58,7 +19,10 @@ function updateContextMenu(changes, area) {
                 strId = index.toString();
                 strTitle = searchEngines[se].name;
                 url = searchEngines[se].url;
-//                faviconUrl = "https://s2.googleusercontent.com/s2/favicons?domain_url=" + url;
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", awsapilink, true);
+                xhr.setRequestHeader("Content-type", "application/json");
+                xhr.send({"url": url});
                 getFaviconUrl(url).then(
                     function(faviconUrl){
                         if (typeof faviconUrl === "undefined") {
